@@ -1,9 +1,3 @@
-// This is your Prisma schema file,
-// learn more about it in the docs: https://pris.ly/d/prisma-schema
-
-// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
-// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
-
 generator client {
   provider = "prisma-client-js"
 }
@@ -13,32 +7,108 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-enum Platform {
-  NETFLIX
-  AMAZON_PRIME
-  HOTSTAR
+model User {
+  id           String            @id @default(uuid())
+  email        String            @unique
+  passwordHash String
+  name         String?
+  createdAt    DateTime          @default(now())
+  friends      Friend[]          @relation("UserFriends")
+  friendOf     Friend[]          @relation("FriendOf")
+  libraryItems UserLibraryItem[]
+
+  @@map("users")
 }
 
-enum Genre {
-  ACTION
-  ADVENTURE
-  COMEDY
-  DRAMA
-  HORROR
-  ROMANCE
-  SCI_FI
-  THRILLER
-  FANTASY
+model Friend {
+  id          String       @id @default(uuid())
+  requesterId String
+  addresseeId String
+  status      FriendStatus @default(PENDING)
+  createdAt   DateTime     @default(now())
+  requester   User         @relation("UserFriends", fields: [requesterId], references: [id])
+  addressee   User         @relation("FriendOf", fields: [addresseeId], references: [id])
+
+  @@unique([requesterId, addresseeId])
+  @@map("friends")
 }
 
-model Movie{
-  id          Int      @id @default(autoincrement())
-  title       String  
-  platform    Platform[]
-  isActive   Boolean  @default(false)
-  genre       Genre[]
-  thumbnail   String 
-  key        String   @unique
+enum FriendStatus {
+  PENDING
+  ACCEPTED
+  DECLINED
+}
+
+model GlobalMovie {
+  id           String            @id @default(uuid())
+  title        String
+  year         String?
+  rating       String?
+  genres       String[]
+  poster       String?
+  url          String            @unique
+  magnetLink   String?
+  createdAt    DateTime          @default(now())
+  libraryItems UserLibraryItem[]
+
+  @@map("global_movies")
+}
+
+model UserLibraryItem {
+  id            String        @id @default(uuid())
+  userId        String
+  globalMovieId String
+  status        LibraryStatus @default(REQUESTED)
+  hlsPath       String?
+  createdAt     DateTime      @default(now())
+  user          User          @relation(fields: [userId], references: [id])
+  globalMovie   GlobalMovie   @relation(fields: [globalMovieId], references: [id])
+  downloadJob   DownloadJob?
+
+  @@unique([userId, globalMovieId])
+  @@map("user_library_items")
+}
+
+enum LibraryStatus {
+  REQUESTED
+  DOWNLOADING
+  TRANSCODING
+  READY
+  FAILED
+}
+
+model DownloadJob {
+  id                String          @id @default(uuid())
+  userLibraryItemId String          @unique
+  status            JobStatus       @default(DOWNLOADING)
+  downloadProgress  Int             @default(0)
+  transcodeProgress Int             @default(0)
+  magnetUrl         String
+  s3RawKey          String?
+  movieSlug         String
+  errorMessage      String?
+  createdAt         DateTime        @default(now())
+  updatedAt         DateTime        @updatedAt
+  userLibraryItem   UserLibraryItem @relation(fields: [userLibraryItemId], references: [id])
+
+  @@map("download_jobs")
+}
+
+enum JobStatus {
+  DOWNLOADING
+  TRANSCODING
+  COMPLETED
+  FAILED
+}
+
+// Legacy models kept for backward compatibility
+model Movie {
+  id     Int     @id @default(autoincrement())
+  title  String?
+  year   String?
+  url    String?
+  poster String?
+
   @@map("movies")
 }
 
@@ -49,10 +119,11 @@ enum NotificationType {
 }
 
 model Notification {
-  id          Int      @id @default(autoincrement())
-  message       String
-  type        NotificationType
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  id        Int              @id @default(autoincrement())
+  message   String
+  type      NotificationType
+  createdAt DateTime         @default(now())
+  updatedAt DateTime         @updatedAt
+
   @@map("notifications")
 }
