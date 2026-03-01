@@ -63,11 +63,19 @@ async function init() {
         }
 
         for (const record of event.Records) {
-          const { eventName, s3 } = record;
+          const { s3 } = record;
           const {
             bucket,
             object: { key },
           } = s3;
+
+          // S3 key pattern: torrents/{downloadJobId}/{filename}
+          // Extract downloadJobId from position [1] and movieSlug from position [2]
+          const keyParts = decodeURIComponent(key.replace(/\+/g, " ")).split("/");
+          const downloadJobId = keyParts[1] ?? "";
+          const movieSlug = keyParts[2]?.replace(/\.[^.]+$/, "") ?? keyParts[1] ?? "";
+
+          console.log(`Starting transcoder for job=${downloadJobId} slug=${movieSlug}`);
 
           // spin up the docker container
           const runTaskCommand = new RunTaskCommand({
@@ -76,13 +84,9 @@ async function init() {
             launchType: "FARGATE",
             networkConfiguration: {
               awsvpcConfiguration: {
-                assignPublicIp: "ENABLED", // or "DISABLED" based on your requirements
-                securityGroups: ["sg-01ffcef4582b45afe"], // Replace with your security group
-                subnets: [
-                  "subnet-0af5e378686d9ead1",
-                  "subnet-006a1ee5d9e3d33bd",
-                  "subnet-0bbdb3dd85337d834",
-                ], // Replace with your subnets
+                assignPublicIp: "ENABLED",
+                securityGroups: (process.env.ECS_SECURITY_GROUP ?? "").split(",").filter(Boolean),
+                subnets: (process.env.ECS_SUBNETS ?? "").split(",").filter(Boolean),
               },
             },
             overrides: {
@@ -90,17 +94,16 @@ async function init() {
                 {
                   name: "video-transcoder",
                   environment: [
-                    {
-                      name: "AWS_ACCESS_KEY_ID",
-                      value: process.env.AWS_ACCESS_KEY_ID!,
-                    },
-                    {
-                      name: "AWS_SECRET_ACCESS_KEY",
-                      value: process.env.AWS_SECRET_ACCESS_KEY!,
-                    },
+                    { name: "DOWNLOAD_JOB_ID", value: downloadJobId },
+                    { name: "AWS_ACCESS_KEY_ID", value: process.env.AWS_ACCESS_KEY_ID! },
+                    { name: "AWS_SECRET_ACCESS_KEY", value: process.env.AWS_SECRET_ACCESS_KEY! },
+                    { name: "AWS_REGION", value: process.env.AWS_REGION ?? "ap-south-1" },
                     { name: "BUCKET_NAME", value: bucket.name },
-                    { name: "KEY", value: key },
-                    { name: "MOVIE_SLUG", value: key.split("/")[1] },
+                    { name: "KEY", value: decodeURIComponent(key.replace(/\+/g, " ")) },
+                    { name: "MOVIE_SLUG", value: movieSlug },
+                    { name: "KAFKA_BROKER", value: process.env.KAFKA_BROKER! },
+                    { name: "DATABASE_URL", value: process.env.DATABASE_URL! },
+                    { name: "AWS_S3_PRODUCTION_BUCKET", value: process.env.AWS_S3_PRODUCTION_BUCKET! },
                   ],
                 },
               ],
