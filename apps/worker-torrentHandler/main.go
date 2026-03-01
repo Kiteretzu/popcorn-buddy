@@ -47,35 +47,38 @@ func main() {
 		log.Fatalf("creating download dir: %v", err)
 	}
 
-	rep.Publish(ctx, "download", 0, "in_progress")
+	rep.Publish(ctx, "download", 0, 0, "in_progress")
 
-	result, err := downloader.Download(ctx, magnetURL, destDir, func(pct int) {
-		rep.Publish(ctx, "download", pct, "in_progress")
+	result, err := downloader.Download(ctx, magnetURL, destDir, func(p downloader.Progress) {
+		rep.Publish(ctx, "download", p.Percent, p.SpeedMBps, "in_progress")
 	})
 	if err != nil {
-		rep.Publish(ctx, "download", 0, "failed")
+		rep.Publish(ctx, "download", 0, 0, "failed")
 		log.Fatalf("download failed: %v", err)
 	}
 
 	log.Printf("Downloaded: %s", result.FilePath)
-	rep.Publish(ctx, "download", 100, "in_progress")
+	rep.Publish(ctx, "download", 100, 0, "in_progress")
 
 	s3Key := fmt.Sprintf("torrents/%s/%s", downloadJobID, result.FileName)
 	log.Printf("Uploading to S3: bucket=%s key=%s", bucket, s3Key)
+	rep.Publish(ctx, "upload", 0, 0, "in_progress")
 
 	up, err := uploader.New(bucket, region, accessKey, secretKey)
 	if err != nil {
-		rep.Publish(ctx, "download", 100, "failed")
+		rep.Publish(ctx, "upload", 0, 0, "failed")
 		log.Fatalf("creating S3 uploader: %v", err)
 	}
 
-	if err := up.Upload(ctx, result.FilePath, s3Key); err != nil {
-		rep.Publish(ctx, "download", 100, "failed")
+	if err := up.Upload(ctx, result.FilePath, s3Key, func(pct int) {
+		rep.Publish(ctx, "upload", pct, 0, "in_progress")
+	}); err != nil {
+		rep.Publish(ctx, "upload", 0, 0, "failed")
 		log.Fatalf("S3 upload failed: %v", err)
 	}
 
 	log.Printf("Upload complete: s3://%s/%s", bucket, s3Key)
-	rep.Publish(ctx, "download", 100, "completed")
+	rep.Publish(ctx, "upload", 100, 0, "completed")
 
 	log.Println("Torrent worker finished successfully")
 }

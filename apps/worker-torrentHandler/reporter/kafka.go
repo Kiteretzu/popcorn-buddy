@@ -13,12 +13,13 @@ const topic = "job-progress"
 
 // ProgressMessage is the payload published to Kafka.
 type ProgressMessage struct {
-	JobID    string `json:"jobId"`
-	UserID   string `json:"userId"`
-	Stage    string `json:"stage"`
-	Progress int    `json:"progress"`
-	Status   string `json:"status"`
-	Ts       string `json:"ts"`
+	JobID      string  `json:"jobId"`
+	UserID     string  `json:"userId"`
+	Stage      string  `json:"stage"`
+	Progress   int     `json:"progress"`
+	SpeedMBps  float64 `json:"speedMBps"`
+	Status     string  `json:"status"`
+	Ts         string  `json:"ts"`
 }
 
 // Reporter sends progress events to a Kafka topic.
@@ -39,14 +40,15 @@ func New(broker, jobID, userID string) *Reporter {
 }
 
 // Publish sends a progress update to Kafka.
-func (r *Reporter) Publish(ctx context.Context, stage string, progress int, status string) {
+func (r *Reporter) Publish(ctx context.Context, stage string, progress int, speedMBps float64, status string) {
 	msg := ProgressMessage{
-		JobID:    r.jobID,
-		UserID:   r.userID,
-		Stage:    stage,
-		Progress: progress,
-		Status:   status,
-		Ts:       time.Now().UTC().Format(time.RFC3339),
+		JobID:     r.jobID,
+		UserID:    r.userID,
+		Stage:     stage,
+		Progress:  progress,
+		SpeedMBps: speedMBps,
+		Status:    status,
+		Ts:        time.Now().UTC().Format(time.RFC3339),
 	}
 
 	data, err := json.Marshal(msg)

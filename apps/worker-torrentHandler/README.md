@@ -44,6 +44,18 @@ go build -o torrent-worker .
 
 **Note:** Ensure Kafka is reachable at `KAFKA_BROKER` (e.g. local Kafka or a tunnel to MSK). If Kafka is down, progress publishing will log errors but the download and S3 upload will still run.
 
+### Quick test with Kafka running
+
+1. Start Kafka (from repo root): `docker compose up -d`
+2. Create the `job-progress` topic (required once; the apache/kafka image may not auto-create it):
+   ```bash
+   docker exec broker /opt/kafka/bin/kafka-topics.sh --create --topic job-progress --bootstrap-server localhost:9092 --partitions 1 --replication-factor 1
+   ```
+   If the script path differs, try `kafka-topics.sh` in your `PATH` inside the container.
+3. In `apps/worker-torrentHandler/.env` set `MAGNET_URL` to a **magnet link** (e.g. from a YTS movie page — use the "Magnet Download" link, not the HTTPS .torrent URL).
+4. From the worker directory: `cd apps/worker-torrentHandler && go run .` (or `go build -o torrent-worker . && ./torrent-worker`).
+5. You should see logs for metadata, download progress, then S3 upload. Progress events are sent to Kafka topic `job-progress` every 2 seconds.
+
 ## Required environment variables
 
 | Variable | Description |
