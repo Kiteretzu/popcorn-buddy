@@ -1,125 +1,36 @@
+// pages/upload-page.jsx
 import SearchMovieForm from "@/components/forms/search-movie-library";
 import UploadMovieForm from "@/components/forms/upload-movie-form";
-import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
+import FeaturesSection from "@/components/global/features-section";
+import PageLayout from "@/components/global/PageLayout";
+import {
+  StyledTabs,
+  StyledTabsContent,
+  StyledTabsList,
+  StyledTabsTrigger,
+} from "@/components/global/styled-tabs";
 
 const UploadPage = () => {
   return (
-    <div className="min-h-screen bg-gradient-to-br from-black via-gray-900 to-gray-800">
-      {/* Background Pattern */}
+    <div className="px-4 py-12 flex flex-col items-center">
+      <StyledTabs defaultValue="mange">
+        <StyledTabsList>
+          <StyledTabsTrigger value="upload">Upload Movie</StyledTabsTrigger>
+          <StyledTabsTrigger value="manage">
+            Upload from Library
+          </StyledTabsTrigger>
+        </StyledTabsList>
 
-      {/* Content */}
-      <div className="relative z-10">
-        {/* Header */}
-        <div className="pt-8 pb-4 px-4">
-          <div className="max-w-4xl mx-auto text-center">
-            <h1 className="text-4xl md:text-5xl font-bold text-white mb-4">
-              Movie Management
-            </h1>
-            <p className="text-xl text-gray-300 max-w-2xl mx-auto">
-              Easily upload and organize your movie collection with our
-              intuitive platform
-            </p>
+        <StyledTabsContent value="upload">
+          <div className="bg-black/20 backdrop-blur-sm rounded-2xl border border-gray-700/50 p-6">
+            <UploadMovieForm />
           </div>
-        </div>
+        </StyledTabsContent>
 
-        {/* Form Container */}
-        <div className="px-4 pb-12">
-          <Tabs defaultValue="upload" className="max-w-4xl mx-auto">
-            <TabsList className="mb-6 flex justify-center">
-              <TabsTrigger className="cursor-pointer" value="upload">
-                Upload Movie
-              </TabsTrigger>
-              <TabsTrigger className="cursor-pointer" value="manage">
-                Upload from Library
-              </TabsTrigger>
-            </TabsList>
-
-            <TabsContent value="upload">
-              <UploadMovieForm />
-            </TabsContent>
-
-            <TabsContent value="manage">
-              <div className="text-center text-gray-300 py-12">
-                {/* Replace this with actual management functionality */}
-                <SearchMovieForm />
-              </div>
-            </TabsContent>
-          </Tabs>
-        </div>
-
-        {/* Features Section */}
-        <div className="px-4 pb-12">
-          <div className="max-w-4xl mx-auto">
-            <div className="grid md:grid-cols-3 gap-8">
-              <div className="text-center p-6 bg-black/40 backdrop-blur-sm rounded-xl shadow-lg border border-gray-700/50">
-                <div className="w-12 h-12 bg-gray-800 rounded-full flex items-center justify-center mx-auto mb-4 border border-gray-600">
-                  <svg
-                    className="w-6 h-6 text-gray-300"
-                    fill="none"
-                    stroke="currentColor"
-                    viewBox="0 0 24 24"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"
-                    />
-                  </svg>
-                </div>
-                <h3 className="font-semibold text-white mb-2">Easy Upload</h3>
-                <p className="text-gray-400 text-sm">
-                  Upload your movie thumbnails and details with our simple form
-                </p>
-              </div>
-
-              <div className="text-center p-6 bg-black/40 backdrop-blur-sm rounded-xl shadow-lg border border-gray-700/50">
-                <div className="w-12 h-12 bg-gray-800 rounded-full flex items-center justify-center mx-auto mb-4 border border-gray-600">
-                  <svg
-                    className="w-6 h-6 text-gray-300"
-                    fill="none"
-                    stroke="currentColor"
-                    viewBox="0 0 24 24"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"
-                    />
-                  </svg>
-                </div>
-                <h3 className="font-semibold text-white mb-2">Organize</h3>
-                <p className="text-gray-400 text-sm">
-                  Categorize by genre and platform for easy browsing
-                </p>
-              </div>
-
-              <div className="text-center p-6 bg-black/40 backdrop-blur-sm rounded-xl shadow-lg border border-gray-700/50">
-                <div className="w-12 h-12 bg-gray-800 rounded-full flex items-center justify-center mx-auto mb-4 border border-gray-600">
-                  <svg
-                    className="w-6 h-6 text-gray-300"
-                    fill="none"
-                    stroke="currentColor"
-                    viewBox="0 0 24 24"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"
-                    />
-                  </svg>
-                </div>
-                <h3 className="font-semibold text-white mb-2">Secure</h3>
-                <p className="text-gray-400 text-sm">
-                  Your movie collection is stored safely and securely
-                </p>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
+        <StyledTabsContent value="manage">
+          <SearchMovieForm />
+        </StyledTabsContent>
+      </StyledTabs>
     </div>
   );
 };

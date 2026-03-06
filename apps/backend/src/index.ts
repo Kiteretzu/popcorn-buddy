@@ -1,9 +1,14 @@
 import express from "express";
 import uploadRoutes from "./routes/upload.routes";
+import authRoutes from "./routes/auth.routes";
+import friendsRoutes from "./routes/friends.routes";
+import globalLibraryRoutes from "./routes/global-library.routes";
+import libraryRoutes from "./routes/library.routes";
 import fs from "fs";
 import path from "path";
 import dotenv from "dotenv";
 import cors from "cors";
+import { fetchMovieData, searchMovie } from "./controllers/upload.controller";
 
 dotenv.config({
   path: path.resolve(__dirname, "../../../.env"),
@@ -32,6 +37,12 @@ app.get("/", (req, res) => {
 });
 
 app.use("/api/upload", uploadRoutes);
+app.get("/api/search-movie", searchMovie);
+app.use("/api/fetch-movie-data", fetchMovieData);
+app.use("/api/auth", authRoutes);
+app.use("/api/friends", friendsRoutes);
+app.use("/api/global-library", globalLibraryRoutes);
+app.use("/api/library", libraryRoutes);
 
 app.listen(port, () => {
   console.log(`Server is running on http://localhost:${port}`);

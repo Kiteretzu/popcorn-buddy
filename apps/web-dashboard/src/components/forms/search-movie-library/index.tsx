@@ -1,112 +1,33 @@
 "use client";
-import { useState } from "react";
-import { debounce } from "lodash";
-import { Search, Film } from "lucide-react";
-
-// Mock movie data - replace with your actual API
-const mockMovies = [
-  {
-    id: 1,
-    title: "The Dark Knight",
-    poster: "https://image.tmdb.org/t/p/w185/qJ2tW6WMUDux911r6m7haRef0WH.jpg",
-  },
-  {
-    id: 2,
-    title: "Inception",
-    poster: "https://image.tmdb.org/t/p/w185/ljsZTbVsrQSqZgWeep2B1QiDKuh.jpg",
-  },
-  {
-    id: 3,
-    title: "Interstellar",
-    poster: "https://image.tmdb.org/t/p/w185/gEU2QniE6E77NI6lCU6MxlNBvIx.jpg",
-  },
-  {
-    id: 4,
-    title: "The Matrix",
-    poster: "https://image.tmdb.org/t/p/w185/f89U3ADr1oiB1s9GkdPOEpXUk5H.jpg",
-  },
-  {
-    id: 5,
-    title: "Pulp Fiction",
-    poster: "https://image.tmdb.org/t/p/w185/d5iIlFn5s0ImszYzBPb8JPIfbXD.jpg",
-  },
-  {
-    id: 6,
-    title: "Forrest Gump",
-    poster: "https://image.tmdb.org/t/p/w185/arw2vcBveWOVZr6pxd9XTd1TdQa.jpg",
-  },
-  {
-    id: 7,
-    title: "The Shawshank Redemption",
-    poster: "https://image.tmdb.org/t/p/w185/q6y0Go1tsGEsmtFryDOJo3dEmqu.jpg",
-  },
-  {
-    id: 8,
-    title: "Avatar",
-    poster: "https://image.tmdb.org/t/p/w185/kyeqWdyUXW608qlYkRqosgbbJyK.jpg",
-  },
-  {
-    id: 9,
-    title: "Titanic",
-    poster: "https://image.tmdb.org/t/p/w185/9xjZS2rlVxm8SFx8kPC3aIGCOYQ.jpg",
-  },
-  {
-    id: 10,
-    title: "The Godfather",
-    poster: "https://image.tmdb.org/t/p/w185/3bhkrj58Vtu7enYsRolD1fZdja1.jpg",
-  },
-];
+import { Search, Film, Upload } from "lucide-react";
+import { useSearchMovie } from "@/hooks/use-search-movie";
 
 const SearchMovieForm = () => {
-  const [query, setQuery] = useState("");
-  const [results, setResults] = useState([]);
-  const [isSearching, setIsSearching] = useState(false);
-  const [showDropdown, setShowDropdown] = useState(false);
+  const {
+    query,
+    results,
+    isSearching,
+    showDropdown,
+    selectedMovieId,
+    setQuery,
+    handleSearch,
+    handleMovieSelect,
+    handleInputFocus,
+    handleInputBlur,
+  } = useSearchMovie({ debounceMs: 1000 });
 
-  const searchMovies = (searchQuery) => {
-    if (!searchQuery.trim()) {
-      setResults([]);
-      setShowDropdown(false);
-      return;
-    }
-
-    setIsSearching(true);
-
-    // Simulate API call - replace with your actual API
-    setTimeout(() => {
-      const filteredMovies = mockMovies.filter((movie) =>
-        movie.title.toLowerCase().includes(searchQuery.toLowerCase())
-      );
-      console.log("U call me alot", filteredMovies);
-      setResults(filteredMovies);
-      setShowDropdown(true);
-      setIsSearching(false);
-    }, 1000);
-  };
-
-  const handleSearch = debounce(searchMovies, 1000);
-
-  const onChange = (e) => {
+  const onChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const value = e.target.value;
     setQuery(value);
     handleSearch(value);
   };
 
-  const handleMovieSelect = (movie) => {
-    setQuery(movie.title);
-    setShowDropdown(false);
-    console.log("Selected movie:", movie);
-  };
-
-  const handleInputFocus = () => {
-    if (results.length > 0) {
-      setShowDropdown(true);
+  const handleSubmit = () => {
+    if (selectedMovieId) {
+      console.log("Submitting movie ID:", selectedMovieId);
+      // Here you can navigate to Upload form or call a function
+      // For example: onMovieSubmit(selectedMovieId);
     }
-  };
-
-  const handleInputBlur = () => {
-    // Delay hiding dropdown to allow click on results
-    setTimeout(() => setShowDropdown(false), 150);
   };
 
   return (
@@ -133,9 +54,20 @@ const SearchMovieForm = () => {
         )}
       </div>
 
+      {/* Submit Button - Only shows when movie is selected */}
+      {selectedMovieId && (
+        <button
+          onClick={handleSubmit}
+          className="w-full mt-3 bg-blue-600 hover:bg-blue-700 text-white font-medium py-3 px-4 rounded-lg transition-colors duration-200 flex items-center justify-center space-x-2"
+        >
+          <Upload className="h-5 w-5" />
+          <span>Continue to Upload</span>
+        </button>
+      )}
+
       {/* Dropdown Results */}
       {showDropdown && results.length > 0 && (
-        <div className="absolute z-10 w-full mt-1 bg-gray-800 border border-gray-700 rounded-lg shadow-lg max-h-96 overflow-y-auto">
+        <div className="absolute z-20 w-full mt-1 bg-gray-800 border border-gray-700 rounded-lg shadow-lg max-h-96 overflow-y-auto">
           {results.map((movie) => (
             <div
               key={movie.id}
@@ -154,10 +86,12 @@ const SearchMovieForm = () => {
                 />
               </div>
               <div className="ml-3 flex-1">
-                <h3 className="text-sm font-medium text-white truncate">
+                <h3 className="text-sm font-medium text-white break-words whitespace-normal">
                   {movie.title}
                 </h3>
-                <p className="text-xs text-gray-400 mt-1">Movie</p>
+                <p className="text-xs text-gray-400 mt-1 break-words whitespace-normal">
+                  {movie.year || "Year unknown"}
+                </p>
               </div>
               <div className="ml-2 flex-shrink-0">
                 <Film className="h-4 w-4 text-gray-400" />

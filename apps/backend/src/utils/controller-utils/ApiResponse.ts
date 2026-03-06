@@ -18,10 +18,8 @@
  */
 
 type ApiResponseCodes = 200 | 201;
-     
-type MessageAllowed<T extends ApiResponseCodes> = T extends 200
-  ? never
-  : string;
+
+type MessageAllowed<T extends ApiResponseCodes> = string | undefined;
 
 class ApiResponse<T extends ApiResponseCodes = 200 | 201> {
   statusCode: T;
@@ -29,9 +27,7 @@ class ApiResponse<T extends ApiResponseCodes = 200 | 201> {
   message?: MessageAllowed<T>;
 
   constructor(statusCode: T, data?: any, message?: MessageAllowed<T>) {
-    if (statusCode === 200 && message) {
-      throw new Error("Message is not allowed for status code 200");
-    }
+    void message; // message always allowed now
     this.statusCode = statusCode;
     this.data = data;
     this.message = message;

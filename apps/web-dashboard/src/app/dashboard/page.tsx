@@ -6,7 +6,7 @@ type Props = {};
 const DashboardPage = async (props: Props) => {
   // Authentication
 
-    return redirect(`/dashboard/home`);
+    // return redirect(`/dashboard/home`);
 
 
   return <div>DashboardPage</div>;  

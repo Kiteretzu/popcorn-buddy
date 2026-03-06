@@ -6,7 +6,7 @@
   "scripts": {
     "build": "npx esbuild src/index.ts --bundle --outfile=dist/index.js --platform=node --tsconfig=tsconfig.json",
     "start": "node dist/index.js",
-    "dev": "npm run build && npm run start"
+    "dev": "npm run build && npm run start",
   },
   "keywords": [],
   "author": "",
@@ -14,20 +14,27 @@
   "type": "commonjs",
   "devDependencies": {
     "@repo/typescript-config": "workspace:*",
+    "tsx": "^4.19.2",
+    "@types/bcryptjs": "^3.0.0",
     "@types/cors": "^2.8.19",
     "@types/express": "^5.0.3",
+    "@types/jsonwebtoken": "^9.0.10",
     "@types/multer": "^1.4.13",
     "esbuild": "^0.25.5"
   },
   "dependencies": {
+    "@aws-sdk/client-ecs": "^3.834.0",
     "@aws-sdk/client-s3": "^3.835.0",
     "@aws-sdk/s3-request-presigner": "^3.835.0",
     "@repo/db": "workspace:*",
+    "bcryptjs": "^3.0.3",
     "cloudinary": "^2.7.0",
     "cors": "^2.8.5",
     "dotenv": "^16.5.0",
     "express": "^5.1.0",
+    "jsonwebtoken": "^9.0.3",
     "multer": "^2.0.1",
+    "puppeteer": "^24.12.1",
     "tsc-watch": "^7.1.1"
   }
 }

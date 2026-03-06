@@ -5,12 +5,20 @@ const instance = axios.create({
   timeout: 10_000,
 });
 
+instance.interceptors.request.use((config) => {
+  if (typeof window !== "undefined") {
+    const token = localStorage.getItem("token");
+    if (token) {
+      config.headers = config.headers ?? {};
+      config.headers["Authorization"] = `Bearer ${token}`;
+    }
+  }
+  return config;
+});
+
 instance.interceptors.response.use(
-  (response) => {
-    console.warn("Response:", response);
-    return response.data;
-  },
-  (error) => Promise.reject(error.response.data)
+  (response) => response.data,
+  (error) => Promise.reject(error?.response?.data ?? error)
 );
 
 export default instance;

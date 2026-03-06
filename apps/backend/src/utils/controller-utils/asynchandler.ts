@@ -1,4 +1,6 @@
 import { Request, Response, NextFunction, RequestHandler } from "express";
+import ApiError from "./ApiError";
+import ApiResponse from "./ApiResponse";
 
 const DEFAULT_VALID_CODES = [
   200, // Ok -> NO-TOAST
@@ -20,10 +22,16 @@ interface HandlerOptions {
   validStatusCodes?: number[];
 }
 
+type SafeHandler = (
+  req: Request,
+  res: Response,
+  next: NextFunction
+) => Promise<ApiResponse | ApiError>;
+
 const asyncHandler = (
-  requestHandler: RequestHandler,
+  requestHandler: SafeHandler,
   options?: HandlerOptions
-) => {
+): any => {
   return (req: Request, res: Response, next: NextFunction) => {
     let statusSent = false;
     let responseBody: any;
@@ -64,18 +72,23 @@ const asyncHandler = (
           if (expectedFields && responseBody) {
             expectedFields.forEach((field) => {
               if (responseBody[field] === undefined) {
-                console.error(`${status} responses must include a '${field}' field`);
+                console.error(
+                  `${status} responses must include a '${field}' field`
+                );
               }
             });
           }
         }
       })
       .catch((err) => {
-        // if (!res.headersSent) {
-        //   console.log('being here?',)
-        //   res.status(500).json({ error: "Internal Server Error" });
-        // }
-        next(err);
+        if (!res.headersSent) {
+          const errorMessage =
+            err?.message ||
+            "Something went wrong while processing the request.";
+          const apiError = new ApiError(500, errorMessage).send(res);
+        } else {
+          next(err);
+        }
       });
   };
 };

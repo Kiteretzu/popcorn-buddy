@@ -11,4 +11,5 @@ const uploadHandler = upload.single("thumbnail");
 
 router.post("/movie-metadata", uploadHandler, uploadMovieMetadata);
 
+
 export default router;

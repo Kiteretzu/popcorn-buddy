@@ -17,13 +17,13 @@
  *
  */
 
-type ApiErrorCodes = 400 | 401 | 404 | 503;
+type ApiErrorCodes = 400 | 401 | 403 | 404 | 409 | 422 | 500 | 503;
 
 type ErrorMessage<T extends ApiErrorCodes> = T extends 400
   ? string
   : string | undefined;
 
-class ApiError<T extends ApiErrorCodes = 400 | 401 | 404> {
+class ApiError<T extends ApiErrorCodes = 400 | 401 | 403 | 404 | 409 | 422> {
   statusCode: T;
   error?: ErrorMessage<T>;
 

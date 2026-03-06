@@ -28,7 +28,7 @@ const UploadMovieForm = () => {
     useUploadMovieMetadata();
 
   return (
-    <Card className="w-full max-w-2xl mx-auto shadow-2xl bg-black/50 backdrop-blur-sm border border-gray-700/50">
+    <Card className="w-full  shadow-2xl bg-black/50 backdrop-blur-sm border border-gray-700/50">
       <CardHeader className="space-y-4 text-center border-b border-gray-700/30">
         <div className="mx-auto w-16 h-16 bg-gradient-to-br from-gray-800 to-black rounded-full flex items-center justify-center border border-gray-600">
           <Film className="w-8 h-8 text-gray-200" />

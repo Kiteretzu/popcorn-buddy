@@ -1,6 +1,3 @@
-
-
-
 import React from "react";
 
 interface IconProps {
@@ -12,7 +9,7 @@ interface IconProps {
 
 // Cloud Upload Icon - Alternative upload icon
 const CloudUploadIcon: React.FC<IconProps> = ({
-  className = "w-5 h-5",
+  className = "w-6 h-6 text-gray-300",
   strokeWidth = 2,
 }) => (
   <svg
@@ -25,7 +22,7 @@ const CloudUploadIcon: React.FC<IconProps> = ({
       strokeLinecap="round"
       strokeLinejoin="round"
       strokeWidth={strokeWidth}
-      d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M9 12l3 3m0 0l3-3m-3 3V9"
+      d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"
     />
   </svg>
 );

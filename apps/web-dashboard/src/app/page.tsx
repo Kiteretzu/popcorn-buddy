@@ -1,6 +1,6 @@
 "use client";
 import Image from "next/image";
-import { useState } from "react";
+import { FormEvent, useState } from "react";
 import {
   Eye,
   EyeOff,
@@ -12,6 +12,8 @@ import {
   Settings,
 } from "lucide-react";
 import { useRouter } from "next/navigation";
+import Link from "next/link";
+import { login } from "@/lib/api";
 
 export default function AdminLoginPage() {
   const [showPassword, setShowPassword] = useState(false);
@@ -19,21 +21,42 @@ export default function AdminLoginPage() {
     email: "",
     password: "",
   });
+  const [error, setError] = useState<string | null>(null);
+  const [loading, setLoading] = useState(false);
 
   const router = useRouter();
 
-  const handleInputChange = (e) => {
+  const getErrorMessage = (err: unknown) => {
+    if (!err || typeof err !== "object") return "Login failed";
+    const rec = err as Record<string, unknown>;
+    const apiError = rec.error;
+    const message = rec.message;
+    if (typeof apiError === "string" && apiError.trim()) return apiError;
+    if (typeof message === "string" && message.trim()) return message;
+    return "Login failed";
+  };
+
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setFormData({
       ...formData,
       [e.target.name]: e.target.value,
     });
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
-    console.log("Admin login:", formData);
-    router.push("/dashboard/");
-    // Handle admin login here
+    setError(null);
+    setLoading(true);
+    try {
+      const res = await login(formData.email, formData.password);
+      localStorage.setItem("token", res.data.token);
+      localStorage.setItem("user", JSON.stringify(res.data.user));
+      router.push("/dashboard");
+    } catch (err: unknown) {
+      setError(getErrorMessage(err));
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -154,7 +177,12 @@ export default function AdminLoginPage() {
 
           {/* Login Form */}
           <div className="bg-primary-dark rounded-2xl p-8 border border-foreground shadow-2xl">
-            <div className="space-y-6">
+            <form onSubmit={handleSubmit} className="space-y-6">
+              {error && (
+                <div className="bg-red-500/10 border border-red-500/30 text-red-200 rounded-lg px-4 py-3 text-sm">
+                  {error}
+                </div>
+              )}
               {/* Email field */}
               <div className="relative">
                 <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
@@ -186,6 +214,7 @@ export default function AdminLoginPage() {
                   required
                 />
                 <button
+                  type="button"
                   onClick={() => setShowPassword(!showPassword)}
                   className="absolute inset-y-0 right-0 pr-3 flex items-center text-muted hover:text-white transition-colors"
                 >
@@ -199,12 +228,20 @@ export default function AdminLoginPage() {
 
               {/* Login button */}
               <button
-                onClick={handleSubmit}
+                type="submit"
+                disabled={loading}
                 className="w-full bg-gradient-to-r from-red-tertiary/80 to-rose-500/70 text-white rounded-lg py-4 text-lg font-semibold hover:from-red-quaternary hover:to-rose-700 hover:cursor-pointer focus:ring-2 focus:ring-red-500/50 focus:outline-none transition-all duration-200 transform hover:scale-[1.02] shadow-lg"
               >
-                Access Dashboard
+                {loading ? "Signing in..." : "Access Dashboard"}
               </button>
-            </div>
+
+              <p className="text-center text-sm text-muted">
+                Don&apos;t have an account?{" "}
+                <Link href="/signup" className="text-blue-secondary hover:underline">
+                  Create one
+                </Link>
+              </p>
+            </form>
           </div>
 
           {/* Security Notice */}

@@ -11,6 +11,7 @@ import CloudUploadIcon from "./CloudUploadIcon";
 import { ImageIcon } from "./ImageIcon";
 import { FolderIcon } from "./FolderIcon";
 import { FileIcon } from "./FileIcon";
+import { OrganizeIcon } from "./OrganizeIcon"; // Importing the OrganizeIcon component
 
 // Folder Icon - For folder/directory representation
 
@@ -61,6 +62,7 @@ export const Icons = {
   File: FileIcon,
   CloudUpload: CloudUploadIcon,
   Folder: FolderIcon,
+  Organize: OrganizeIcon, // Exporting the OrganizeIcon component
   getFileTypeIcon,
 };
 
