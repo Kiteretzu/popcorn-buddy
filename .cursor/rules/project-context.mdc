@@ -1,0 +1,283 @@
+---
+description: System architecture context for the popcorn-buddies monorepo
+alwaysApply: true
+---
+
+# Popcorn Buddies – Project Context
+
+## Overview
+
+Popcorn Buddies is a **cloud-based movie storage and watch-party platform**.
+
+Users can:
+
+- Choose movies from a **global torrent library**
+- Download them into their **personal cloud movie library**
+- Have the movie **automatically transcoded to HLS**
+- Stream the movie anytime
+- Create **watch-party rooms** where friends can watch together with synchronized controls (play, pause, seek).
+
+The system uses **background workers, queues, and event streaming** to process movies and deliver real-time progress updates to users.
+
+---
+
+# Monorepo Structure
+
+This repository is organized as a **monorepo** with multiple services.
+
+
+apps/
+backend
+web-dashboard
+worker-sqs-listener
+worker-torrentHandler
+worker-transcoder
+ws-server
+
+
+Each application has a **clear single responsibility**.
+
+---
+
+# Core Services
+
+## Backend
+
+Responsibilities:
+
+- API endpoints
+- Authentication
+- Creating movie download jobs
+- Managing user movie libraries
+- Creating watch-party rooms
+- Spawning worker jobs
+
+The backend **does not perform heavy processing**.  
+Heavy work is delegated to **background workers**.
+
+---
+
+## Web Dashboard
+
+A Next.js web interface where users can:
+
+- Browse available movies
+- Add movies to their library
+- Monitor download/transcoding progress
+- Watch movies
+- Create and join watch-party rooms
+
+Real-time updates are received through **WebSocket connections**.
+
+---
+
+# Movie Processing Pipeline
+
+Movie processing is handled through **three stages**.
+
+---
+
+## Stage 1 — Torrent Download
+
+Service:
+
+
+worker-torrentHandler
+
+
+Responsibilities:
+
+- Created by the backend when a user requests a movie
+- Downloads the movie using a torrent
+- Uploads the raw movie file to the **raw storage bucket**
+
+
+s3-raw
+
+
+- Sends progress updates to **Kafka**
+
+Progress stage:
+
+
+download
+
+
+---
+
+## Stage 2 — Storage Event Listener
+
+Service:
+
+
+worker-sqs-listener
+
+
+Responsibilities:
+
+- Listens for **S3 upload events** from the raw storage bucket
+- Uses **SQS notifications**
+- Triggers the transcoding worker when a new raw movie appears
+
+This worker acts as a **bridge between storage events and processing jobs**.
+
+---
+
+## Stage 3 — Video Transcoding
+
+Service:
+
+
+worker-transcoder
+
+
+Responsibilities:
+
+- Downloads the raw movie from **s3-raw**
+- Converts the video into **HLS streaming format**
+- Uploads the processed streaming files to:
+
+
+prod-s3
+
+
+- Emits progress events to **Kafka**
+
+Progress stage:
+
+
+transcode
+
+
+---
+
+# Kafka Event Streaming
+
+Workers emit progress updates through Kafka so users can monitor job progress.
+
+Kafka topic:
+
+
+job-progress
+
+
+Message format:
+
+
+{
+jobId: string
+userId: string
+stage: "download" | "transcode"
+progress: number
+status: string
+ts: number
+}
+
+
+These events allow the frontend to display **live job progress**.
+
+---
+
+# WebSocket Server
+
+Service:
+
+
+ws-server
+
+
+The WebSocket server provides **real-time communication with clients**.
+
+### Authentication
+
+Connections must include a JWT token:
+
+
+?token=JWT
+
+
+Workflow:
+
+1. Verify the JWT
+2. Extract the `userId`
+3. Register the WebSocket connection
+
+---
+
+## Client Tracking
+
+Connections are tracked per user:
+
+
+Map<userId, Set<WebSocket>>
+
+
+This allows a single user to have **multiple tabs or devices connected simultaneously**.
+
+---
+
+## Kafka Consumer
+
+The WebSocket server consumes Kafka messages from:
+
+
+job-progress
+
+
+When a message arrives:
+
+1. Read the `userId`
+2. Find all WebSocket connections for that user
+3. Broadcast the progress message to those clients
+
+This enables **real-time progress updates** in the UI.
+
+---
+
+# Watch Party System
+
+Users can create **watch-party rooms**.
+
+Features:
+
+- A user creates a room and receives a **shareable link**
+- Friends join the room through that link
+- All participants share the **same synchronized video player state**
+
+Synchronized actions include:
+
+- play
+- pause
+- seek / forward
+
+Synchronization is handled through **WebSocket communication**.
+
+---
+
+# Storage Architecture
+
+Two storage buckets are used.
+
+## Raw Storage
+
+
+s3-raw
+
+
+Contains:
+
+- original downloaded movie files
+
+---
+
+## Streaming Storage
+
+
+prod-s3
+
+
+Contains:
+
+- HLS playlists
+- HLS video segments
+- streaming-ready movie assets

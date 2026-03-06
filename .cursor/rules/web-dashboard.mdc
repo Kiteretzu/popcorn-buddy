@@ -1,0 +1,49 @@
+---
+description: Web dashboard (Next.js) conventions for popcorn-buddies
+globs: apps/web-dashboard/**
+alwaysApply: false
+---
+
+# Web Dashboard – Frontend Rules
+
+## Scope
+
+These rules apply when working in `apps/web-dashboard/**` (Next.js App Router, React, Tailwind).
+
+## Routing & Layout
+
+- Follow the existing App Router structure under `src/app`.
+- Prefer server components by default; use client components only when needed (state, effects, browser APIs, event handlers).
+- Keep layout components (`layout.tsx`, shared `PageLayout` etc.) consistent and reuse them across pages instead of duplicating layout code.
+
+## Components & Hooks
+
+- Prefer reusable components from `src/components` before creating new ones.
+- Colocate component-specific logic and styles near the component.
+- Extract shared logic into custom hooks under `src/hooks` if it is reused across components.
+
+## Styling
+
+- Use Tailwind CSS utility classes instead of ad-hoc inline styles, matching the existing design language.
+- Reuse existing design tokens, color choices, and spacing patterns visible in current components.
+ - Make sure styling stays consistent with the global theme defined in shared layout/components (colors, typography, spacing, radii).
+ - Prefer `components/ui` shadcn UI primitives for buttons, inputs, dialogs, etc. instead of introducing new ad‑hoc primitives.
+ - If you notice shadcn components diverging from the global theme, first update the shared shadcn styles/tokens to align with the global theme instead of overriding them locally.
+
+## Forms
+
+- Build forms using the `useZodForm` hook for schema-driven validation and consistent form state handling.
+- Prefer reusing existing form field components where possible; keep validation messages and error display consistent with other pages.
+
+## Data Fetching & React Query Hooks
+
+- Use the react-query-based hooks from `src/hooks/react-query-hooks` for all backend interactions.
+- For **mutations**, use `useMutationData` (and `useMutationDataState` when you need to update UI state optimistically or avoid flicker while reflecting local changes).
+- For **queries**, use `useQueryData` as the default way to fetch and cache backend data.
+- Continue to use existing API helper utilities in `src/lib` instead of raw `fetch`, wiring them through these react-query hooks.
+
+## UX & Quality
+
+- Maintain consistent UX patterns with existing pages (loading states, error messages, form handling).
+- Favor simple, readable components over overly abstracted patterns.
+
