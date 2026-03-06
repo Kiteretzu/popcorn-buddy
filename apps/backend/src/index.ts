@@ -14,6 +14,13 @@ dotenv.config({
   path: path.resolve(__dirname, "../../../.env"),
 });
 
+if (!process.env.JWT_SECRET?.trim()) {
+  console.error(
+    "Fatal: JWT_SECRET is required. Add JWT_SECRET=your-secret to your .env (repo root or apps/backend).",
+  );
+  process.exit(1);
+}
+
 const uploadPath = path.join(__dirname, "..", "uploads");
 
 if (!fs.existsSync(uploadPath)) {
@@ -29,7 +36,7 @@ app.use(
     origin: "*",
     methods: ["GET", "POST", "PUT", "DELETE"],
     credentials: true,
-  })
+  }),
 );
 
 app.get("/", (req, res) => {

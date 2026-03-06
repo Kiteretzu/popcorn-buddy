@@ -9,6 +9,8 @@ import { AuthRequest } from "../middleware/requireAuth";
 export const register = asyncHandler(async (req: any, res: any) => {
   const { email, password, name } = req.body;
 
+  console.log(email, password, name);
+
   if (!email || !password) {
     return new ApiError(400, "Email and password are required").send(res);
   }

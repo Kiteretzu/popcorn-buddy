@@ -1,13 +1,12 @@
+import { UploadMovieInput } from "@/components/forms/types";
 import { uploadMovieMetadataSchema } from "@/components/forms/upload-movie-form/schema";
 import { uploadMovieMetadata } from "@/lib/api";
-import { setMovieUploadUrl } from "@/redux/slices/movie-upload-url-slice";
 import { useAppDispatch } from "@/redux/store";
+import { uploadService } from "@/services/uploadService";
 import { useRouter } from "next/navigation";
+import { toast } from "sonner";
 import { useMutationData } from "./react-query-hooks/useMutationData";
 import useZodForm from "./useZodForm";
-import { UploadMovieInput } from "@/components/forms/types";
-import { uploadService } from "@/services/uploadService";
-import { toast } from "sonner";
 
 const handleMutation = async (data: UploadMovieInput) => {
   console.log("Uploading movie data:", data);
@@ -32,7 +31,7 @@ const handleMutation = async (data: UploadMovieInput) => {
 
     const uploadId = await uploadService.startUpload(
       data.movieFile,
-      response.data.uploadUrl
+      response.data.uploadUrl,
     );
 
     return uploadId;
@@ -55,14 +54,14 @@ export const useUploadMovieMetadata = () => {
     (data) => {
       toast.success("Movie is uploading with id: " + data?.uploadId);
       router.push("upload/movie");
-    }
+    },
   );
 
   const { register, errors, onFormSubmit, watch, setValue } = useZodForm(
     uploadMovieMetadataSchema,
     (data) => {
       mutate(data);
-    }
+    },
   );
 
   return {

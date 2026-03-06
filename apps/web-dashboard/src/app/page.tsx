@@ -11,9 +11,9 @@ import {
   Users,
   Settings,
 } from "lucide-react";
-import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { login } from "@/lib/api";
+import { setAuthCookie } from "@/lib/auth-cookie";
 
 export default function AdminLoginPage() {
   const [showPassword, setShowPassword] = useState(false);
@@ -23,8 +23,6 @@ export default function AdminLoginPage() {
   });
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
-
-  const router = useRouter();
 
   const getErrorMessage = (err: unknown) => {
     if (!err || typeof err !== "object") return "Login failed";
@@ -43,15 +41,23 @@ export default function AdminLoginPage() {
     });
   };
 
-  const handleSubmit = async (e: FormEvent) => {
+  const handleLogin = async (e: FormEvent) => {
     e.preventDefault();
     setError(null);
     setLoading(true);
     try {
       const res = await login(formData.email, formData.password);
-      localStorage.setItem("token", res.data.token);
+      const token = res?.data?.token;
+      if (!token) {
+        setError("Login succeeded but no token received");
+        return;
+      }
+      localStorage.setItem("token", token);
       localStorage.setItem("user", JSON.stringify(res.data.user));
-      router.push("/dashboard");
+      setAuthCookie(token);
+      // Full-page redirect so the cookie is sent and middleware can verify (middleware cannot see localStorage)
+      window.location.assign("/dashboard");
+      return;
     } catch (err: unknown) {
       setError(getErrorMessage(err));
     } finally {
@@ -63,13 +69,17 @@ export default function AdminLoginPage() {
     <div className="min-h-screen bg-slate-900 flex">
       {/* Left Side - Enhanced Visual Section */}
       <div className="hidden lg:flex lg:flex-1 bg-gradient-to-br from-blue-900 via-slate-800 to-slate-900 relative overflow-hidden">
-        {/* Background Image with Low Opacity */}
+        {/* Background Video with Low Opacity */}
         <div className="absolute inset-0 opacity-15">
-          <Image
-            src="/assets/landing.png"
-            alt="Admin Dashboard Background"
-            fill
-            className="object-cover"
+          <video
+            className="h-full w-full object-cover"
+            src="/assets/landing.mp4"
+            autoPlay
+            muted
+            loop
+            playsInline
+            preload="auto"
+            aria-hidden="true"
           />
         </div>
 
@@ -154,8 +164,27 @@ export default function AdminLoginPage() {
       </div>
 
       {/* Right Side - Login Section */}
-      <div className="flex-1 lg:flex-none lg:w-96 xl:w-[480px] flex items-center justify-center p-8">
-        <div className="w-full max-w-md">
+      <div className="flex-1 lg:flex-none lg:w-96 xl:w-[480px] flex items-center justify-center p-8 relative overflow-hidden bg-slate-900">
+        {/* Background image - scaled wrapper so rotated image still fills area */}
+        <div className="absolute inset-0 opacity-20 overflow-hidden">
+          <div
+            className="absolute left-1/2 top-1/2"
+            style={{
+              width: "160%",
+              height: "160%",
+              transform: "translate(-50%, -50%) rotate(20deg)",
+            }}
+          >
+            <Image
+              src="/assets/movies.jpg"
+              alt=""
+              fill
+              className="object-cover"
+              aria-hidden
+            />
+          </div>
+        </div>
+        <div className="w-full max-w-md relative z-10">
           {/* Admin Header */}
           <div className="text-center mb-12">
             <div>
@@ -177,7 +206,7 @@ export default function AdminLoginPage() {
 
           {/* Login Form */}
           <div className="bg-primary-dark rounded-2xl p-8 border border-foreground shadow-2xl">
-            <form onSubmit={handleSubmit} className="space-y-6">
+            <form onSubmit={handleLogin} className="space-y-6">
               {error && (
                 <div className="bg-red-500/10 border border-red-500/30 text-red-200 rounded-lg px-4 py-3 text-sm">
                   {error}
@@ -237,7 +266,10 @@ export default function AdminLoginPage() {
 
               <p className="text-center text-sm text-muted">
                 Don&apos;t have an account?{" "}
-                <Link href="/signup" className="text-blue-secondary hover:underline">
+                <Link
+                  href="/signup"
+                  className="text-blue-secondary hover:underline"
+                >
                   Create one
                 </Link>
               </p>

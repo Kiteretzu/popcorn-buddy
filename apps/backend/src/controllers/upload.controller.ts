@@ -11,7 +11,6 @@ import ApiResponse from "../utils/controller-utils/ApiResponse";
 import ApiError from "../utils/controller-utils/ApiError";
 import { ECSClient, RunTaskCommand } from "@aws-sdk/client-ecs";
 import { scrapeYTS } from "../helpers/crawler/crawl_yts";
-import { searchYTSAjax } from "../helpers/crawler/yts-ajax-search";
 
 export const uploadMovieMetadata = asyncHandler(async (req: any, res: any) => {
   const { title, genre, platform, extension, contentType } = req.body;
@@ -23,7 +22,7 @@ export const uploadMovieMetadata = asyncHandler(async (req: any, res: any) => {
 
   if (!title || genre.length === 0 || platform.length === 0) {
     return new ApiError(400, "Title, genre, and platform are required.").send(
-      res
+      res,
     );
   }
 
@@ -50,7 +49,7 @@ export const uploadMovieMetadata = asyncHandler(async (req: any, res: any) => {
   });
 
   const thumbnailUrl = getThumbnailUrl(
-    `${title}/${movieSlug(title, fileExtension)}`
+    `${title}/${movieSlug(title, fileExtension)}`,
   );
 
   // WIP: From frontend we will get platform and genre as arrays of strings
@@ -80,7 +79,7 @@ export const uploadMovieMetadata = asyncHandler(async (req: any, res: any) => {
   });
 
   return new ApiResponse(201, uploadUrl, "New movie update url created").send(
-    res
+    res,
   );
 });
 
@@ -96,13 +95,14 @@ export const searchMovie = asyncHandler(async (req: any, res: any) => {
     return new ApiError(400, "Title is required").send(res);
   }
 
-  const movies = await searchYTSAjax(query);
+  // const movies = await searchYTSAjax(query);
 
-  if (!movies || movies.length === 0) {
-    return new ApiResponse(200, []).send(res);
-  }
+  // if (!movies || movies.length === 0) {
+  //   return new ApiResponse(200, []).send(res);
+  // }
 
-  return new ApiResponse(200, movies).send(res);
+  //
+  return new ApiResponse(200, { message: "Not implemented" }).send(res);
 });
 
 export const fetchMovieData = asyncHandler(async (req: any, res: any) => {

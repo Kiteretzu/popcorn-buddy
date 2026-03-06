@@ -1,5 +1,6 @@
 "use client";
 import React, { useState } from "react";
+import { useRouter } from "next/navigation";
 import {
   Bell,
   Settings,
@@ -12,6 +13,7 @@ import {
   Cog,
   HelpCircle,
 } from "lucide-react";
+import { clearAuthCookie } from "@/lib/auth-cookie";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -25,7 +27,15 @@ import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 
 export default function AdminNavbar() {
+  const router = useRouter();
   const [showNotifications, setShowNotifications] = useState(false);
+
+  const handleSignOut = () => {
+    localStorage.removeItem("token");
+    localStorage.removeItem("user");
+    clearAuthCookie();
+    router.push("/");
+  };
 
   // Mock data for notifications
   const notifications = [
@@ -208,7 +218,10 @@ export default function AdminNavbar() {
                   Security Settings
                 </DropdownMenuItem>
                 <DropdownMenuSeparator className="bg-slate-700" />
-                <DropdownMenuItem className="text-red-400 hover:text-red-300 focus:bg-red-500/10 focus:text-red-300">
+                <DropdownMenuItem
+                  className="text-red-400 hover:text-red-300 focus:bg-red-500/10 focus:text-red-300"
+                  onClick={handleSignOut}
+                >
                   <LogOut className="h-4 w-4 mr-2" />
                   Sign Out
                 </DropdownMenuItem>

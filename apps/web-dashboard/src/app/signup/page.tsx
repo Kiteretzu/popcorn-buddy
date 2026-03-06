@@ -3,6 +3,7 @@ import { useState, FormEvent } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { signup } from "@/lib/api";
+import { setAuthCookie } from "@/lib/auth-cookie";
 import Image from "next/image";
 
 export default function SignupPage() {
@@ -31,6 +32,7 @@ export default function SignupPage() {
       const res = await signup(email, password, name);
       localStorage.setItem("token", res.data.token);
       localStorage.setItem("user", JSON.stringify(res.data.user));
+      setAuthCookie(res.data.token);
       router.push("/dashboard");
     } catch (err: unknown) {
       setError(getErrorMessage(err));
@@ -40,8 +42,20 @@ export default function SignupPage() {
   };
 
   return (
-    <div className="min-h-screen bg-slate-900 flex items-center justify-center px-4">
-      <div className="w-full max-w-md">
+    <div className="min-h-screen bg-slate-900 flex items-center justify-center px-4 relative overflow-hidden">
+      {/* Wallpaper background */}
+      <div className="absolute inset-0">
+        <Image
+          src="/assets/movies.jpg"
+          alt=""
+          fill
+          className="object-cover"
+          priority
+          aria-hidden
+        />
+      </div>
+      <div className="absolute inset-0 bg-slate-900/70" aria-hidden />
+      <div className="w-full max-w-md relative z-10">
         <div className="text-center mb-8 flex flex-col items-center justify-center">
           <Image
             src="/assets/logo.png"
