@@ -1,44 +1,23 @@
-import {
-  Home,
-  Bell,
-  CreditCard,
-  Settings,
-  Library,
-  Upload,
-} from "lucide-react";
-
-const ICONS: { [key: string]: React.ReactNode } = {
-  Home: <Home color="#ddd6d6" />,
-  MyLibrary: <Library color="#ddd6d6" />,
-  Notifications: <Bell color="#ddd6d6" />,
-  Billing: <CreditCard color="#ddd6d6" />,
-  Settings: <Settings color="#ddd6d6" />,
-  Upload: <Upload color="#ddd6d6" />,
-};
+import { Home, Library, Activity } from "lucide-react";
 
 export const MENU_ITEMS = (): {
   title: string;
-  href: string; 
+  href: string;
   icon: React.ReactNode;
 }[] => [
   {
     title: "Home",
-    href: `/dashboard/home`,
-    icon: ICONS.Home,
+    href: "/dashboard/home",
+    icon: <Home className="w-5 h-5" />,
   },
   {
-    title: "Upload",
-    href: `/dashboard/upload`,
-    icon: ICONS.Upload,
+    title: "Library",
+    href: "/dashboard/library",
+    icon: <Library className="w-5 h-5" />,
   },
   {
-    title: "My Library",
-    href: `/dashboard/my-library`,
-    icon: ICONS.MyLibrary,
-  },
-  {
-    title: "Notifications",
-    href: `/dashboard/notifications`,
-    icon: ICONS.Notifications,
+    title: "Activity",
+    href: "/dashboard/activity",
+    icon: <Activity className="w-5 h-5" />,
   },
 ];

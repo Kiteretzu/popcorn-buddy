@@ -1,19 +1,22 @@
-"use client";
-import Sidebar from "@/components/global/sidebar/index";
+import Navbar from "@/components/global/header";
+import Sidebar from "@/components/global/sidebar";
 
 type Props = {
   children: React.ReactNode;
 };
 
-const layout = ({ children }: Props) => {
+const DashboardLayout = ({ children }: Props) => {
   return (
-    <div className="flex  min-h-screen w-screen">
-      <Sidebar activeWorkspaceId={""} />
-      <div className="w-full justify-start overflow-y-scroll overflow-x-hidden">
-        {children}
+    <div className="flex flex-col h-screen bg-primary overflow-hidden">
+      <Navbar />
+      <div className="flex flex-1 overflow-hidden">
+        <Sidebar />
+        <main className="flex-1 overflow-y-auto overflow-x-hidden">
+          {children}
+        </main>
       </div>
     </div>
   );
 };
 
-export default layout;
+export default DashboardLayout;
