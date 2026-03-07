@@ -5,10 +5,10 @@ import ApiError from "../utils/controller-utils/ApiError";
 import { scrapeYTS } from "../helpers/crawler/crawl_yts";
 
 export const searchGlobalLibrary = asyncHandler(async (req: any, res: any) => {
-  const { q = "", page = "1", limit = "20" } = req.query;
-
-  const pageNum = Math.max(1, parseInt(page as string, 10));
-  const limitNum = Math.min(100, Math.max(1, parseInt(limit as string, 10)));
+  const { q = "", page = "1", limit = "20", perPage } = req.query;
+  const limitParam = (perPage ?? limit) as string;
+  const limitNum = Math.min(100, Math.max(1, parseInt(limitParam, 10) || 20));
+  const pageNum = Math.max(1, parseInt(page as string, 10) || 1);
   const skip = (pageNum - 1) * limitNum;
 
   const where = q

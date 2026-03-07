@@ -57,9 +57,23 @@ export const getMe = () =>
   request.get<unknown, Response<AuthResponse["user"]>>("/api/auth/me");
 
 /** Global library */
-export const searchGlobalLibrary = (q: string, page = 1, limit = 20) =>
-  request.get<unknown, Response<{ movies: GlobalMovie[]; pagination: { page: number; total: number; pages: number } }>>(
-    `/api/global-library?q=${encodeURIComponent(q)}&page=${page}&limit=${limit}`
+export interface GlobalLibraryPagination {
+  page: number;
+  limit: number;
+  total: number;
+  pages: number;
+}
+
+export const searchGlobalLibrary = (
+  q: string,
+  page = 1,
+  perPage = 20
+) =>
+  request.get<
+    unknown,
+    Response<{ movies: GlobalMovie[]; pagination: GlobalLibraryPagination }>
+  >(
+    `/api/global-library?q=${encodeURIComponent(q)}&page=${page}&perPage=${perPage}`
   );
 
 export const getGlobalMovie = (id: string) =>
