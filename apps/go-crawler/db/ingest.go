@@ -28,6 +28,12 @@ func (i *Ingestor) Close(ctx context.Context) {
 	i.conn.Close(ctx)
 }
 
+// UpdateMagnetByURL sets magnetLink for the global_movies row with the given url.
+func (i *Ingestor) UpdateMagnetByURL(ctx context.Context, url, magnetLink string) error {
+	_, err := i.conn.Exec(ctx, `UPDATE global_movies SET "magnetLink" = $1 WHERE url = $2`, magnetLink, url)
+	return err
+}
+
 const colsPerRow = 6 // title, year, rating, genres, poster, url
 
 // UpsertMovies inserts or updates movies one-by-one. Prefer UpsertMoviesBatched for large slices.
