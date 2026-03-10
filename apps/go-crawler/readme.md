@@ -23,8 +23,56 @@ go build -o go-crawler .
 | `go run .` | Crawl browse-movies and write `movies.json` (optionally upsert to DB). |
 | `go run ./cmd/seed` | Read `movies.json` and upsert all entries into `global_movies`. |
 | `go run ./cmd/fetch-magnets` | Read `movies.json`, visit each movie URL, fetch magnet link, write enriched JSON (and optionally update DB). |
+| `go run ./cmd/server` | Start HTTP API on **localhost:4010** for single-URL magnet lookup (or `pnpm run dev` from repo root). |
 
 All commands are run from the `apps/go-crawler` directory.
+
+---
+
+## 4. Magnet API (single-URL lookup)
+
+A small HTTP server that exposes the same magnet-fetch logic as `fetch-magnets` for **one URL at a time**. Useful for on-demand magnet lookup without processing a full JSON file.
+
+**Run the server:**
+
+```bash
+go run ./cmd/server
+# Or from repo root: pnpm run dev  (runs all apps including this server on :4010)
+```
+
+Server listens on **http://localhost:4010**.
+
+### Endpoints
+
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| GET | `/magnet?url=<movie-page-url>` | Fetch magnet link for the given YTS movie page URL. |
+| POST | `/magnet` | Same; send JSON body `{"url": "<movie-page-url>"}`. |
+| GET | `/health` | Health check; returns `200 OK`. |
+
+### Examples
+
+**GET:**
+
+```bash
+curl "http://localhost:4010/magnet?url=https://www.yts-official.top/movies/durango-1999/"
+```
+
+**POST:**
+
+```bash
+curl -X POST http://localhost:4010/magnet \
+  -H "Content-Type: application/json" \
+  -d '{"url":"https://www.yts-official.top/movies/durango-1999/"}'
+```
+
+**Success response (200):**
+
+```json
+{"magnetLink":"magnet:?xt=urn:btih:..."}
+```
+
+**Error responses:** `400` (missing url), `404` (no magnet found), `502` (fetch/parse error).
 
 ---
 
