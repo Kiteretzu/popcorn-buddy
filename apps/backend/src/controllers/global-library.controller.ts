@@ -2,7 +2,7 @@ import { client } from "@repo/db/client";
 import asyncHandler from "../utils/controller-utils/asynchandler";
 import ApiResponse from "../utils/controller-utils/ApiResponse";
 import ApiError from "../utils/controller-utils/ApiError";
-import { scrapeYTS } from "../helpers/crawler/crawl_yts";
+import { fetchMagnetFromGoCrawler } from "../helpers/crawler/go-crawler";
 
 export const searchGlobalLibrary = asyncHandler(async (req: any, res: any) => {
   const { q = "", page = "1", limit = "20", perPage } = req.query;
@@ -39,11 +39,10 @@ export const getGlobalMovieById = asyncHandler(async (req: any, res: any) => {
     return new ApiError(404, "Movie not found in global library").send(res);
   }
 
-  // Fetch and cache magnet link on demand if not already stored
+  // Fetch and cache magnet link on demand via go-crawler API
   if (!movie.magnetLink && movie.url) {
     try {
-      const scraped = await scrapeYTS(movie.url);
-      const magnet = (scraped[0] as any)?.links?.[0]?.magnet;
+      const magnet = await fetchMagnetFromGoCrawler(movie.url);
       if (magnet) {
         await client.globalMovie.update({
           where: { id },
@@ -52,7 +51,7 @@ export const getGlobalMovieById = asyncHandler(async (req: any, res: any) => {
         return new ApiResponse(200, { ...movie, magnetLink: magnet }, "Movie detail").send(res);
       }
     } catch {
-      // return what we have even if scraping fails
+      // return what we have even if fetch fails
     }
   }
 

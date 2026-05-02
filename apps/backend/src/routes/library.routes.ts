@@ -1,8 +1,12 @@
 import { Router } from "express";
 import requireAuth from "../middleware/requireAuth";
-import { addToLibrary, getLibrary, getLibraryItem } from "../controllers/library.controller";
+import {
+  addToLibrary,
+  getLibrary,
+  getLibraryItem,
+} from "../controllers/library.controller";
 
-const router = Router();
+const router = Router() as Router;
 
 router.use(requireAuth);
 

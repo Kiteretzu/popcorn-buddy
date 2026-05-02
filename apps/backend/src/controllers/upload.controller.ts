@@ -10,7 +10,7 @@ import asyncHandler from "../utils/controller-utils/asynchandler";
 import ApiResponse from "../utils/controller-utils/ApiResponse";
 import ApiError from "../utils/controller-utils/ApiError";
 import { ECSClient, RunTaskCommand } from "@aws-sdk/client-ecs";
-import { scrapeYTS } from "../helpers/crawler/crawl_yts";
+import { fetchMagnetFromGoCrawler } from "../helpers/crawler/go-crawler";
 
 export const uploadMovieMetadata = asyncHandler(async (req: any, res: any) => {
   const { title, genre, platform, extension, contentType } = req.body;
@@ -125,29 +125,23 @@ export const fetchMovieData = asyncHandler(async (req: any, res: any) => {
   console.log("this is movie", movie);
 
   const url = movie.url;
+  if (!url) {
+    return new ApiError(400, "Movie URL is required").send(res);
+  }
 
-  const response = await scrapeYTS(url!);
+  const magnetUrl = await fetchMagnetFromGoCrawler(url);
+  console.log("magnet from go-crawler", magnetUrl ?? "(none)");
 
-  console.log("response", response[0]?.links[0]?.magnet);
-  // save the response to the database
-  // start the docker container in cloud
-
-  // spin up the docker container
-
-  console.log("Spining up docker container");
+  console.log("Spining up docker container with env", process.env.AWS_ACCESS_KEY_ID, process.env.AWS_SECRET_ACCESS_KEY, process.env.AWS_REGION, process.env.AWS_S3_BUCKET_NAME, process.env.ECS_TASK_DEFINITION_TORRENT, process.env.ECS_CLUSTER, process.env.ECS_SECURITY_GROUP, process.env.ECS_SUBNETS);
   const runTaskCommand = new RunTaskCommand({
     taskDefinition: process.env.ECS_TASK_DEFINITION_TORRENT!,
     cluster: process.env.ECS_CLUSTER!,
     launchType: "FARGATE",
     networkConfiguration: {
       awsvpcConfiguration: {
-        assignPublicIp: "ENABLED", // or "DISABLED" based on your requirements
-        securityGroups: ["sg-01ffcef4582b45afe"], // Replace with your security group
-        subnets: [
-          "subnet-0af5e378686d9ead1",
-          "subnet-006a1ee5d9e3d33bd",
-          "subnet-0bbdb3dd85337d834",
-        ], // Replace with your subnets
+        assignPublicIp: "ENABLED",
+        securityGroups: [process.env.ECS_SECURITY_GROUP!],
+        subnets: process.env.ECS_SUBNETS!.split(","),
       },
     },
     overrides: {
@@ -167,7 +161,7 @@ export const fetchMovieData = asyncHandler(async (req: any, res: any) => {
               name: "AWS_REGION",
               value: process.env.AWS_REGION!,
             },
-            { name: "MAGNET_URL", value: response[0]?.links[0]?.magnet || "" },
+            { name: "MAGNET_URL", value: magnetUrl ?? "" },
             {
               name: "AWS_S3_BUCKET_NAME",
               value: process.env.AWS_S3_RAW_VIDEOS_FOLDER!,

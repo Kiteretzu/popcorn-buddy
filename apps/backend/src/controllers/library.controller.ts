@@ -6,8 +6,15 @@ import asyncHandler from "../utils/controller-utils/asynchandler";
 import ApiResponse from "../utils/controller-utils/ApiResponse";
 import ApiError from "../utils/controller-utils/ApiError";
 import { AuthRequest } from "../middleware/requireAuth";
-import { scrapeYTS } from "../helpers/crawler/crawl_yts";
+import { fetchMagnetFromGoCrawler } from "../helpers/crawler/go-crawler";
 import { movieSlug } from "../helpers/awsHelpers";
+import dotenv from "dotenv";
+import path from "path";
+
+dotenv.config({});
+console.log("AWS_REGION", process.env.AWS_REGION);
+console.log("AWS_ACCESS_KEY_ID", process.env.AWS_ACCESS_KEY_ID);
+console.log("AWS_SECRET_ACCESS_KEY", process.env.AWS_SECRET_ACCESS_KEY);
 
 const ecsClient = new ECSClient({
   region: process.env.AWS_REGION!,
@@ -21,7 +28,7 @@ async function startTorrentTask(
   downloadJobId: string,
   magnetUrl: string,
   slug: string,
-  userId: string
+  userId: string,
 ) {
   const command = new RunTaskCommand({
     taskDefinition: process.env.ECS_TASK_DEFINITION_TORRENT!,
@@ -30,7 +37,9 @@ async function startTorrentTask(
     networkConfiguration: {
       awsvpcConfiguration: {
         assignPublicIp: "ENABLED",
-        securityGroups: (process.env.ECS_SECURITY_GROUP ?? "").split(",").filter(Boolean),
+        securityGroups: (process.env.ECS_SECURITY_GROUP ?? "")
+          .split(",")
+          .filter(Boolean),
         subnets: (process.env.ECS_SUBNETS ?? "").split(",").filter(Boolean),
       },
     },
@@ -43,10 +52,19 @@ async function startTorrentTask(
             { name: "USER_ID", value: userId },
             { name: "MAGNET_URL", value: magnetUrl },
             { name: "MOVIE_SLUG", value: slug },
-            { name: "AWS_ACCESS_KEY_ID", value: process.env.AWS_ACCESS_KEY_ID! },
-            { name: "AWS_SECRET_ACCESS_KEY", value: process.env.AWS_SECRET_ACCESS_KEY! },
+            {
+              name: "AWS_ACCESS_KEY_ID",
+              value: process.env.AWS_ACCESS_KEY_ID!,
+            },
+            {
+              name: "AWS_SECRET_ACCESS_KEY",
+              value: process.env.AWS_SECRET_ACCESS_KEY!,
+            },
             { name: "AWS_REGION", value: process.env.AWS_REGION! },
-            { name: "AWS_S3_BUCKET_NAME", value: process.env.AWS_S3_RAW_VIDEOS_FOLDER! },
+            {
+              name: "AWS_S3_BUCKET_NAME",
+              value: process.env.AWS_S3_RAW_VIDEOS_FOLDER!,
+            },
             { name: "KAFKA_BROKER", value: process.env.KAFKA_BROKER! },
           ],
         },
@@ -65,7 +83,9 @@ export const addToLibrary = asyncHandler(async (req: AuthRequest, res: any) => {
 
   const userId = req.user!.userId;
 
-  const globalMovie = await client.globalMovie.findUnique({ where: { id: globalMovieId } });
+  const globalMovie = await client.globalMovie.findUnique({
+    where: { id: globalMovieId },
+  });
   if (!globalMovie) {
     return new ApiError(404, "Movie not found in global library").send(res);
   }
@@ -78,25 +98,35 @@ export const addToLibrary = asyncHandler(async (req: AuthRequest, res: any) => {
     return new ApiError(409, "Movie already in your library").send(res);
   }
 
-  // Fetch magnet link if not cached
+  // Fetch magnet link if not cached (via go-crawler API)
   let magnetLink = globalMovie.magnetLink;
-  if (!magnetLink) {
+  if (!magnetLink && globalMovie.url) {
     try {
-      const scraped = await scrapeYTS(globalMovie.url);
-      magnetLink = (scraped[0] as any)?.links?.[0]?.magnet ?? null;
+      magnetLink = await fetchMagnetFromGoCrawler(globalMovie.url);
+      console.log("magnetLink", magnetLink);
       if (magnetLink) {
-        await client.globalMovie.update({ where: { id: globalMovieId }, data: { magnetLink } });
+        await client.globalMovie.update({
+          where: { id: globalMovieId },
+          data: { magnetLink },
+        });
       }
-    } catch {
-      // proceed without magnet
+    } catch (err) {
+      console.warn("go-crawler magnet fetch failed:", err);
     }
   }
 
   if (!magnetLink) {
-    return new ApiError(422, "Could not resolve magnet link for this movie").send(res);
+    return new ApiError(
+      422,
+      "Could not resolve magnet link for this movie",
+    ).send(res);
   }
 
-  const slug = movieSlug(globalMovie.title + (globalMovie.year ? `-${globalMovie.year}` : ""));
+  const slug = movieSlug(
+    globalMovie.title + (globalMovie.year ? `-${globalMovie.year}` : ""),
+  );
+
+  console.log("slug", slug);
 
   // Create library item and download job atomically
   const libraryItem = await client.userLibraryItem.create({
@@ -119,7 +149,14 @@ export const addToLibrary = asyncHandler(async (req: AuthRequest, res: any) => {
 
   // Start the Go torrent worker on ECS
   try {
-    await startTorrentTask(libraryItem.downloadJob!.id, magnetLink, slug, userId);
+    console.log("Starting torrent task");
+    await startTorrentTask(
+      libraryItem.downloadJob!.id,
+      magnetLink,
+      slug,
+      userId,
+    );
+    console.log("Torrent task started");
   } catch (err: any) {
     // Mark as failed if ECS launch fails
     await client.downloadJob.update({
@@ -130,14 +167,19 @@ export const addToLibrary = asyncHandler(async (req: AuthRequest, res: any) => {
       where: { id: libraryItem.id },
       data: { status: "FAILED" },
     });
+    console.error("Failed to start download task", err);
     return new ApiError(500, "Failed to start download task").send(res);
   }
 
-  return new ApiResponse(201, {
-    libraryItemId: libraryItem.id,
-    downloadJobId: libraryItem.downloadJob!.id,
-    status: libraryItem.status,
-  }, "Movie added to library, download started").send(res);
+  return new ApiResponse(
+    201,
+    {
+      libraryItemId: libraryItem.id,
+      downloadJobId: libraryItem.downloadJob!.id,
+      status: libraryItem.status,
+    },
+    "Movie added to library, download started",
+  ).send(res);
 });
 
 export const getLibrary = asyncHandler(async (req: AuthRequest, res: any) => {
@@ -164,42 +206,48 @@ export const getLibrary = asyncHandler(async (req: AuthRequest, res: any) => {
   return new ApiResponse(200, items, "User library").send(res);
 });
 
-export const getLibraryItem = asyncHandler(async (req: AuthRequest, res: any) => {
-  const { id } = req.params;
-  const userId = req.user!.userId;
+export const getLibraryItem = asyncHandler(
+  async (req: AuthRequest, res: any) => {
+    const { id } = req.params;
+    const userId = req.user!.userId;
 
-  const item = await client.userLibraryItem.findFirst({
-    where: { id, userId },
-    include: {
-      globalMovie: true,
-      downloadJob: true,
-    },
-  });
+    const item = await client.userLibraryItem.findFirst({
+      where: { id, userId },
+      include: {
+        globalMovie: true,
+        downloadJob: true,
+      },
+    });
 
-  if (!item) {
-    return new ApiError(404, "Library item not found").send(res);
-  }
-
-  // Generate presigned HLS playlist URL when ready
-  let hlsUrl: string | null = null;
-  if (item.status === "READY" && item.hlsPath) {
-    try {
-      const s3Client = new S3Client({
-        region: process.env.AWS_REGION!,
-        credentials: {
-          accessKeyId: process.env.AWS_ACCESS_KEY_ID!,
-          secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY!,
-        },
-      });
-      const command = new GetObjectCommand({
-        Bucket: process.env.AWS_S3_PRODUCTION_BUCKET!,
-        Key: `${item.hlsPath}/master.m3u8`,
-      });
-      hlsUrl = await getSignedUrl(s3Client, command, { expiresIn: 3600 });
-    } catch {
-      // return item without presigned URL
+    if (!item) {
+      return new ApiError(404, "Library item not found").send(res);
     }
-  }
 
-  return new ApiResponse(200, { ...item, hlsUrl }, "Library item detail").send(res);
-});
+    // Generate presigned HLS playlist URL when ready
+    let hlsUrl: string | null = null;
+    if (item.status === "READY" && item.hlsPath) {
+      try {
+        const s3Client = new S3Client({
+          region: process.env.AWS_REGION!,
+          credentials: {
+            accessKeyId: process.env.AWS_ACCESS_KEY_ID!,
+            secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY!,
+          },
+        });
+        const command = new GetObjectCommand({
+          Bucket: process.env.AWS_S3_PRODUCTION_BUCKET!,
+          Key: `${item.hlsPath}/master.m3u8`,
+        });
+        hlsUrl = await getSignedUrl(s3Client, command, { expiresIn: 3600 });
+      } catch {
+        // return item without presigned URL
+      }
+    }
+
+    return new ApiResponse(
+      200,
+      { ...item, hlsUrl },
+      "Library item detail",
+    ).send(res);
+  },
+);

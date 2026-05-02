@@ -54,6 +54,7 @@ func main() {
 		}
 
 		magnet, err := crawler.FetchMagnetFromPage(client, url)
+		println("magnet", magnet)
 		if err != nil {
 			log.Printf("FetchMagnetFromPage %s: %v", url, err)
 			writeJSON(w, http.StatusBadGateway, map[string]string{"error": err.Error()})
@@ -73,6 +74,7 @@ func main() {
 	})
 
 	log.Printf("go-crawler API listening on %s (GET/POST /magnet?url=... or POST /magnet with JSON body)", addr)
+	println("Server is running on port", addr)
 	if err := http.ListenAndServe(addr, nil); err != nil {
 		log.Fatalf("ListenAndServe: %v", err)
 	}
